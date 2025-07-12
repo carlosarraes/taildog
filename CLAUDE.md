@@ -46,7 +46,7 @@ pkg/types/types.go           # Shared types and interfaces (currently empty)
 ### Key Design Decisions
 
 - Uses Kong for CLI argument parsing
-- Supports optional query argument (for getting all logs vs filtered logs)
+- **Query argument is ALWAYS optional** - users can run `taildog` (all logs) or `taildog "filter"` (filtered logs)
 - Standard Go project layout with cmd/ and internal/ separation
 - Modular design planned for client, config, and output handling
 

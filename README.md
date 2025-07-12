@@ -29,7 +29,10 @@ Download the binary for your platform from the [releases page](https://github.co
 export DD_API_KEY="your-api-key"
 export DD_APPLICATION_KEY="your-app-key"
 
-# Tail logs to stdout
+# Tail all logs to stdout
+taildog
+
+# Tail specific service logs to stdout
 taildog "service:my-app"
 
 # Tail and write to file
@@ -44,6 +47,9 @@ taildog "service:app1 OR service:app2"
 ### Basic Tailing
 
 ```bash
+# Tail ALL logs (no filter)
+taildog
+
 # Tail all logs from a service
 taildog "service:my-api"
 

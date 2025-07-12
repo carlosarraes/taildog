@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/alecthomas/kong"
 )
@@ -10,7 +12,21 @@ var version = "0.0.1"
 
 type CLI struct {
 	Query   string `kong:"arg,optional,help='Datadog query (e.g. service:my-app)'"`
+	APIKey  string `kong:"env='DD_API_KEY',help='Datadog API key'"`
+	AppKey  string `kong:"env='DD_APPLICATION_KEY',help='Datadog Application key'"`
 	Version bool   `kong:"help='Show version information'"`
+}
+
+func validateAuth() error {
+	apiKey := os.Getenv("DD_API_KEY")
+	if strings.TrimSpace(apiKey) == "" {
+		return fmt.Errorf("Missing required environment variable: DD_API_KEY")
+	}
+	appKey := os.Getenv("DD_APPLICATION_KEY")
+	if strings.TrimSpace(appKey) == "" {
+		return fmt.Errorf("Missing required environment variable: DD_APPLICATION_KEY")
+	}
+	return nil
 }
 
 func main() {
@@ -26,6 +42,11 @@ func main() {
 		return
 	}
 
-	fmt.Println("taildog foundation is working!")
+	if err := validateAuth(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("CLI parsed successfully")
 	ctx.Exit(0)
 }
