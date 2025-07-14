@@ -8,6 +8,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/carlosarraes/taildog/internal/client"
+	"github.com/carlosarraes/taildog/internal/config"
 )
 
 var version = "0.0.1"
@@ -16,6 +17,7 @@ type CLI struct {
 	Query   string `kong:"arg,optional,help='Datadog query (e.g. service:my-app)'"`
 	APIKey  string `kong:"env='DD_API_KEY',required,help='Datadog API key'"`
 	AppKey  string `kong:"env='DD_APPLICATION_KEY',required,help='Datadog Application key'"`
+	Site    string `kong:"env='DD_SITE',help='Datadog site (default: datadoghq.com)'"`
 	Version bool   `kong:"help='Show version information'"`
 }
 
@@ -32,20 +34,28 @@ func main() {
 		return
 	}
 
-	cfg := &client.Config{
-		APIKey:     cli.APIKey,
-		AppKey:     cli.AppKey,
-		Site:       os.Getenv("DD_SITE"),
-		Timeout:    30 * time.Second,
-		MaxRetries: 3,
+	cfg, err := config.NewConfig(cli.APIKey, cli.AppKey, cli.Site, cli.Query)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
+		os.Exit(1)
 	}
 
-	ddClient := client.NewClient(cfg)
+	ddClient := client.NewClient(cfg.ToClientConfig())
+
+	authCtx, authCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer authCancel()
+
+	fmt.Println("Testing authentication...")
+	if err := config.TestAuthentication(authCtx, ddClient); err != nil {
+		fmt.Fprintf(os.Stderr, "Authentication failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("✅ Authentication successful!")
 
 	testCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	query := cli.Query
+	query := cfg.Query
 	if query == "" {
 		query = "service:*"
 	}

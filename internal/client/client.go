@@ -27,8 +27,11 @@ func NewClient(cfg *Config) *Client {
 	}
 
 	configuration := datadog.NewConfiguration()
-	configuration.HTTPClient.Timeout = cfg.Timeout
+	// TODO: Properly set timeout when we understand the configuration better
 
+	if configuration.DefaultHeader == nil {
+		configuration.DefaultHeader = make(map[string]string)
+	}
 	configuration.DefaultHeader["DD-API-KEY"] = cfg.APIKey
 	configuration.DefaultHeader["DD-APPLICATION-KEY"] = cfg.AppKey
 
