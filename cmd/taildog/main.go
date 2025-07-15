@@ -9,6 +9,8 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/carlosarraes/taildog/internal/client"
 	"github.com/carlosarraes/taildog/internal/config"
+	"github.com/carlosarraes/taildog/internal/signals"
+	"github.com/carlosarraes/taildog/internal/tailing"
 )
 
 var version = "0.0.1"
@@ -52,35 +54,27 @@ func main() {
 	}
 	fmt.Println("✅ Authentication successful!")
 
-	testCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	query := cfg.Query
 	if query == "" {
 		query = "service:*"
 	}
 
-	fmt.Printf("Testing Datadog client with query: %s\n", query)
-	response, err := ddClient.FetchLogs(testCtx, query)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "API call failed: %v\n", err)
+	fmt.Printf("Starting to tail logs with query: %s\n", query)
+	fmt.Println("Press Ctrl+C to stop...")
+	fmt.Println()
+
+	tailCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	signalHandler := signals.NewHandler(cancel)
+	signalHandler.SetupGracefulShutdown()
+
+	tailer := tailing.NewTailer(ddClient, 5*time.Second)
+	if err := tailer.Start(tailCtx, query); err != nil {
+		fmt.Fprintf(os.Stderr, "Tailing error: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("API call successful! Response type: %T\n", response)
-	if response.Data != nil {
-		fmt.Printf("Found %d log entries\n", len(response.Data))
-		if len(response.Data) > 0 {
-			firstLog := response.Data[0]
-			fmt.Printf("First log type: %T\n", firstLog)
-			if firstLog.Attributes != nil {
-				if firstLog.Attributes.Message != nil {
-					fmt.Printf("First log has message: %s\n", *firstLog.Attributes.Message)
-				}
-			}
-		}
-	}
-
-	fmt.Println("✅ Client creation and API call test successful!")
+	fmt.Println("\n✅ Log tailing stopped")
 	ctx.Exit(0)
 }

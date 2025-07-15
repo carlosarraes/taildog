@@ -5,6 +5,8 @@ A modern CLI tool to tail Datadog logs in real-time, inspired by `tail -f` but f
 ## Features
 
 - **Real-time log tailing** from Datadog with live updates
+- **Local SQLite storage** - automatically saves all logs for searchability
+- **Web interface** - search and analyze logs through browser (`taildog serve`)
 - **Multiple query support** - run multiple instances for different services/environments
 - **File output** with optional rotation and buffering
 - **Flexible formatting** - JSON for searchability, text for readability
@@ -35,8 +37,11 @@ taildog
 # Tail specific service logs to stdout
 taildog "service:my-app"
 
-# Tail and write to file
+# Tail and write to file (also saves to database)
 taildog "service:my-app AND @http.status_code:>=400" --output errors.log
+
+# Start web interface for searching logs
+taildog serve
 
 # Multiple services
 taildog "service:app1 OR service:app2"
@@ -66,7 +71,7 @@ taildog "service:my-app AND status:error"
 ### Output to File
 
 ```bash
-# Write logs to file
+# Write logs to file (also saves to database)
 taildog "service:my-app" --output app.log
 
 # JSON format for searchability
@@ -74,6 +79,17 @@ taildog "service:my-app" --output app.json --format json
 
 # With file rotation
 taildog "service:my-app" --output app.log --rotate-size 100MB
+```
+
+### Web Interface
+
+```bash
+# Terminal 1: Collect logs
+taildog "service:api"
+
+# Terminal 2: Search logs
+taildog serve --port 8080
+# Opens http://localhost:8080 for searching
 ```
 
 ### Advanced Usage
@@ -180,7 +196,7 @@ taildog "service:my-app AND (status:error OR @http.status_code:>=400)"
 - **Development**: Monitor your service logs during development
 - **Production Monitoring**: Keep an eye on production errors and performance
 - **Debugging**: Tail specific error patterns or trace IDs
-- **Log Analysis**: Export logs to files for further analysis
+- **Log Analysis**: Export logs to files and search through web interface
 - **Multi-environment**: Run multiple instances for different environments
 
 ## Development
@@ -197,8 +213,8 @@ taildog "service:my-app AND (status:error OR @http.status_code:>=400)"
 
 **Phase 2**: Enhanced functionality
 
-- TOML configuration support (`~/.config/taildog/config.toml`)
-- Multiple output formats (text/JSON)
+- Local SQLite storage for all logs
+- Web interface for searching (`taildog serve`)
 - File output with rotation and buffering
 - Advanced query support and filtering
 

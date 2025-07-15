@@ -58,9 +58,16 @@ func (c *Client) FetchLogs(ctx context.Context, query string, cursor ...string) 
 
 	if len(cursor) > 0 && cursor[0] != "" {
 		params = params.WithPageCursor(cursor[0])
+	} else {
+		now := time.Now()
+		from := now.Add(-15 * time.Minute)
+		params = params.WithFilterFrom(from)
+		params = params.WithFilterTo(now)
 	}
 
-	params = params.WithPageLimit(10)
+	params = params.WithPageLimit(100)
+	
+	params = params.WithSort(datadogV2.LOGSSORT_TIMESTAMP_ASCENDING)
 
 	response, _, err := c.api.ListLogsGet(ctx, *params)
 	if err != nil {
